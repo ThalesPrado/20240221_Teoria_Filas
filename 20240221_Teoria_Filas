@@ -1,0 +1,236 @@
+!pip install pytz
+!pip install pulp
+
+# Importar bibliotecas
+from pulp import LpMaximize, LpProblem, LpVariable, lpSum, value,LpMinimize
+import numpy as np
+import math as mt
+import datetime
+import pytz
+
+def obter_hora_em_fuso_horario(fuso_horario):
+    # Obtém a hora atual
+    hora_atual = datetime.datetime.now()
+
+    # Converte para o fuso horário desejado
+    fuso_horario_desejado = pytz.timezone(fuso_horario)
+    hora_no_fuso_horario = hora_atual.astimezone(fuso_horario_desejado)
+
+    # Formata e exibe a hora
+    formato_hora = "%H"
+    hora_formatada = hora_no_fuso_horario.strftime(formato_hora)
+    #print(f"A hora atual no fuso horário {fuso_horario} é: {hora_formatada}")
+    return hora_formatada
+
+
+hora_formatada = obter_hora_em_fuso_horario('America/sao_paulo')
+# dt_obj = datetime.datetime.strptime(hora_formatada, "%Y-%m-%d %H:%M:%S %z")
+# hora_apenas = dt_obj.strftime("%H:%M")
+# print("Hora apenas:", hora_apenas)
+
+
+print(hora_formatada)
+
+
+# Media de atendimento / Media de pessoas por minuto no mercado
+media_atendimento_vector = np.zeros(3)
+media_pessoas_chegando_vector = np.zeros(3)
+media_atendimento_vector[0] = float(input("Quanto em media voce consegue atender por minuto?: no primeiro turno (7-15): "))
+media_pessoas_chegando_vector[0] = float(input("Quantas pessoas entram no seu sistema por minuto ?: no primeiro turno (7-15): "))
+media_atendimento_vector[1] = float(input("Quanto em media voce consegue atender por minuto ?: no segundo turno (15-23): "))
+media_pessoas_chegando_vector[1] = float(input("Quantas pessoas entram no seu sistema por minuto ?: no segundo turno (15-23): "))
+media_atendimento_vector[2] = float(input("Quanto em media voce consegue atender por minuto ?: no terceiro turno (23-07):  "))
+media_pessoas_chegando_vector[2] = float(input("Quantas pessoas entram no seu sistema por minuto ?:no terceiro turno (23-07): "))
+
+# Estrutura para coletar horario vigente de turno
+fuso_horario_desejado = str(input("Diga qual continente/cidade voce esta falando "))
+#print(fuso_horario_desejado)
+
+# Estrutura do fuso horario desejado
+hora_formatada = obter_hora_em_fuso_horario(fuso_horario_desejado)
+hora_formatada = str(hora_formatada)
+hora_formatada = int(hora_formatada)
+
+# retorno para verificar o valor da variavel
+print(hora_formatada)
+
+# Verificar o turno
+if(hora_formatada<=15 and hora_formatada>=7):
+  media_atendimento=media_atendimento_vector[0]
+  media_pessoas_chegando=media_pessoas_chegando_vector[0]
+if(hora_formatada<=23 and hora_formatada>=15.01):
+  media_atendimento=media_atendimento_vector[1]
+  media_pessoas_chegando=media_pessoas_chegando_vector[1]
+if(hora_formatada<=6.99 and hora_formatada>=23.01):
+  media_atendimento=media_atendimento_vector[2]
+  media_pessoas_chegando=media_pessoas_chegando_vector[2]
+
+#from ast import While
+# Verificar se o sistema de fato e factivel
+while(media_pessoas_chegando >= media_atendimento):
+        print("Sistema infactivel, necessario contratar mais pessoas")
+        media_atendimento = float(input("Quanto em media voce consegue atender por minuto ?"))
+        media_pessoas_chegando = float(input("Quantas pessoas entram no seu sistema por minuto ?"))
+
+# Intervalo de chegadas
+intervalo_chegada = 60/media_pessoas_chegando
+print("Tempo de chegada entre consumidores em segundo",intervalo_chegada)
+
+tempo_atendimento = 60/media_atendimento
+print("Tempo de atendimento em segundos",tempo_atendimento)
+
+
+# Taxa de utilizacao do sistema
+numero_atendentes_turno = int(input("Quantas pessoas estao trabalhando nesse turno ? "))
+taxa_utilizacao_sistema = round(media_pessoas_chegando/(media_atendimento*numero_atendentes_turno),2)
+print(taxa_utilizacao_sistema)
+
+
+# Intensidade de trafego
+intensidade_trafego = round(tempo_atendimento/intervalo_chegada,2)
+print(intensidade_trafego)
+
+# Tempo medio na fila
+tempo_medio_fila = media_pessoas_chegando/(media_atendimento-media_pessoas_chegando)
+
+# Tempo sistema
+tempo_sistema = round(60*tempo_medio_fila + tempo_atendimento,2)
+print(tempo_sistema)
+
+# Taxa de ociosidade
+taxa_ociosidade =(media_atendimento-media_pessoas_chegando)/media_atendimento# 1-taxa_utilizacao_sistema
+print(taxa_ociosidade)
+
+
+# Probabilidade de haver exatamente n clientes no sistema
+total_clientes_desejado = int(input("Favor preencher total de clientes desejado a qualquer momento "))
+probabilidade_n_clientes = ((media_pessoas_chegando/media_atendimento)**total_clientes_desejado)*((media_atendimento-media_pessoas_chegando)/media_atendimento)
+print(probabilidade_n_clientes)
+
+
+#OTIMIZAÇÃO DE PESSOAL SALARIO MEDIO
+
+
+utilizacao = float(input("Qual a taxa de utilizacao do sistema desejada ?"))
+import ipywidgets as widgets
+from IPython.display import display
+
+# # Função para ser chamada quando o botão for clicado
+# def on_button_click(b):
+#     if b.description == "Mínimo":
+#         taxas.value = "minimo"
+#     elif b.description == "Máximo":
+#         taxas.value = "maximo"
+
+# # Criação do botão
+# min_button = widgets.Button(description="Mínimo")
+# max_button = widgets.Button(description="Máximo")
+
+# # Vincula a função de clique aos botões
+# min_button.on_click(on_button_click)
+# max_button.on_click(on_button_click)
+
+# # Variável para armazenar a escolha
+# taxas = widgets.Text(value='', description='Escolha:')
+
+# # Exibição dos widgets
+# display(widgets.HBox([min_button, max_button]))
+# display(taxas)
+
+taxas = str(input("Voce deseja taxa uma minima ou maxima de utilizacao ?"))
+N = media_pessoas_chegando/(utilizacao*media_atendimento)
+
+if(N==int(N)):
+    N=int(N)
+if(taxas=="minima"):
+    N=int(N)
+else:
+    N=int(N+1)
+print("O otimo de funcionarios nesse turno e",N)
+
+salario_funcionario = float(input("Qual o custo medio por funcionario?"))
+numero_funcionarios_atuais = int(input("Qual total de funcionarios atuais?"))
+economia = (numero_funcionarios_atuais-N)*salario_funcionario
+print("A economia esperada do atual vs o otimo e",economia)
+
+# Total funcionarios
+numero_funcionarios=numero_funcionarios_atuais
+vetores = {}
+lista_modelos = {}
+for k in range(numero_funcionarios):
+      nome_do_vetor = f'id_funcionario_{k}'
+      nome_da_lista = f'modelos_respectivos_{k}'
+      lista_modelos[nome_da_lista] = []
+      vetores[nome_do_vetor] = []
+
+k = 0
+A = np.ones((3,numero_funcionarios_atuais+3)) # Aqui colocamos o numero de funcionarios + as folgas do modelo
+C = np.ones(numero_funcionarios_atuais)
+while(k<numero_funcionarios):
+  chave=f'id_funcionario_{k}'
+  salario=float(input("Favor preencher o salario do funcionario:"))
+  C[k]=salario
+  produtividade=float(input("Favor preencher o numero de atendimentos do funcionario por hora:"))
+  A[0][k]=produtividade
+  vetores[chave].append(salario)
+  vetores[chave].append(produtividade)
+  k = k + 1
+
+print(numero_funcionarios_atuais)
+
+#print(vetores["id_funcionario_5"])
+print(A)
+print(C)
+
+# Construir a matriz A
+for i in range(len(A)):
+  if(i == 0):
+      A[i][numero_funcionarios_atuais]=-1
+      A[i][numero_funcionarios_atuais+1]=0
+      A[i][numero_funcionarios_atuais+2]=0
+  if(i == 1):
+      A[i][numero_funcionarios_atuais]=0
+      A[i][numero_funcionarios_atuais+1]=-1
+      A[i][numero_funcionarios_atuais+2]=0
+  if(i == 2):
+      A[i][numero_funcionarios_atuais]=0
+      A[i][numero_funcionarios_atuais+1]=0
+      A[i][numero_funcionarios_atuais+2]=1
+print(A)
+
+# Ajustar matriz C
+C = list(C)+list(np.zeros(len(A)))
+
+
+# Vetor de restricoes
+b = np.zeros(len(A))
+b = b.T
+b[0]=100#media_pessoas_chegando*60
+b[1]=int(input("Favor preencher numero minimo de funcionarios no turno: "))
+b[2]=N
+print(b)
+
+
+# Criar o problema de otimização
+prob = LpProblem(name="Minimize_ctx", sense=LpMinimize)
+
+# Variáveis de decisão
+num_vars = len(C)
+x = [LpVariable(name=f"x{i}", cat="Binary") for i in range(1, num_vars + 1)]
+
+# Função objetivo
+prob += lpSum(C[i - 1] * x[i - 1] for i in range(1, num_vars + 1))
+
+# Restrições
+for i in range(len(A)):
+    prob += lpSum(A[i][j] * x[j] for j in range(num_vars)) == b[i]
+
+# Resolve o problema
+prob.solve()
+
+# Mostra o resultado
+print("Status:", prob.status)
+print("Valor da função objetivo (cTx):", value(prob.objective))
+print("Valores de x:")
+for v in prob.variables():
+    print(v.name, "=", v.varValue)
